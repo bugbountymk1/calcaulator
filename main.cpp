@@ -5,14 +5,16 @@
 #include <iomanip>
 #include <sstream>
 #include <limits>
+#include <windows.h>
 
 class Calculator {
 public:
-    Calculator() : memory(0.0) {}
+    Calculator() : memory(0.0), darkTheme(true) {}
 
     void run() {
+        applyTheme();
         int choice = 0;
-        while (choice != 9) {
+        while (choice != 14) {
             displayMenu();
             std::cout << "\nEnter choice: ";
             if (!(std::cin >> choice)) {
@@ -30,8 +32,13 @@ public:
                 case 5: performPower(); break;
                 case 6: performSquareRoot(); break;
                 case 7: performModulo(); break;
-                case 8: showHistory(); break;
-                case 9: std::cout << "Goodbye!\n"; break;
+                case 8: performFactorial(); break;
+                case 9: performPercentage(); break;
+                case 10: showHistory(); break;
+                case 11: clearHistory(); break;
+                case 12: toggleTheme(); break;
+                case 13: memoryMenu(); break;
+                case 14: std::cout << "Goodbye!\n"; break;
                 default: std::cout << "Invalid choice. Try again.\n";
             }
         }
@@ -40,6 +47,21 @@ public:
 private:
     double memory;
     std::vector<std::string> history;
+    bool darkTheme;
+
+    void applyTheme() const {
+        if (darkTheme) {
+            system("color 0F"); // black background, bright white text
+        } else {
+            system("color F0"); // white background, black text
+        }
+    }
+
+    void toggleTheme() {
+        darkTheme = !darkTheme;
+        applyTheme();
+        std::cout << "Switched to " << (darkTheme ? "Dark" : "White") << " theme.\n";
+    }
 
     void displayMenu() const {
         std::cout << "\n==============================\n";
@@ -52,10 +74,30 @@ private:
         std::cout << "5. Power (x^y)\n";
         std::cout << "6. Square Root\n";
         std::cout << "7. Modulo\n";
-        std::cout << "8. Show History\n";
-        std::cout << "9. Exit\n";
+        std::cout << "8. Factorial (n!)\n";
+        std::cout << "9. Percentage\n";
+        std::cout << "10. Show History\n";
+        std::cout << "11. Clear History\n";
+        std::cout << "12. Theme (Dark/White)\n";
+        std::cout << "13. Memory Functions\n";
+        std::cout << "14. Exit\n";
         std::cout << "------------------------------\n";
-        std::cout << "Memory: " << memory << "\n";
+        std::cout << "Theme: " << (darkTheme ? "Dark" : "White") << "\n";
+        std::cout << "Memory: " << formatNumber(memory) << "\n";
+    }
+
+    std::string formatNumber(double value) const {
+        std::ostringstream oss;
+        oss << std::fixed << std::setprecision(6) << value;
+        std::string s = oss.str();
+        size_t dot = s.find('.');
+        if (dot != std::string::npos) {
+            s.erase(s.find_last_not_of('0') + 1, std::string::npos);
+            if (!s.empty() && s.back() == '.') {
+                s.pop_back();
+            }
+        }
+        return s;
     }
 
     double getNumber(const std::string& prompt) {
@@ -73,7 +115,7 @@ private:
 
     void record(const std::string& entry) {
         history.push_back(entry);
-        if (history.size() > 50) {
+        if (history.size() > 100) {
             history.erase(history.begin());
         }
     }
@@ -82,24 +124,24 @@ private:
         double a = getNumber("Enter first number: ");
         double b = getNumber("Enter second number: ");
         double result = a + b;
-        std::cout << a << " + " << b << " = " << result << "\n";
-        record(std::to_string(a) + " + " + std::to_string(b) + " = " + std::to_string(result));
+        std::cout << formatNumber(a) << " + " << formatNumber(b) << " = " << formatNumber(result) << "\n";
+        record(formatNumber(a) + " + " + formatNumber(b) + " = " + formatNumber(result));
     }
 
     void performSubtraction() {
         double a = getNumber("Enter first number: ");
         double b = getNumber("Enter second number: ");
         double result = a - b;
-        std::cout << a << " - " << b << " = " << result << "\n";
-        record(std::to_string(a) + " - " + std::to_string(b) + " = " + std::to_string(result));
+        std::cout << formatNumber(a) << " - " << formatNumber(b) << " = " << formatNumber(result) << "\n";
+        record(formatNumber(a) + " - " + formatNumber(b) + " = " + formatNumber(result));
     }
 
     void performMultiplication() {
         double a = getNumber("Enter first number: ");
         double b = getNumber("Enter second number: ");
         double result = a * b;
-        std::cout << a << " * " << b << " = " << result << "\n";
-        record(std::to_string(a) + " * " + std::to_string(b) + " = " + std::to_string(result));
+        std::cout << formatNumber(a) << " * " << formatNumber(b) << " = " << formatNumber(result) << "\n";
+        record(formatNumber(a) + " * " + formatNumber(b) + " = " + formatNumber(result));
     }
 
     void performDivision() {
@@ -110,16 +152,16 @@ private:
             return;
         }
         double result = a / b;
-        std::cout << a << " / " << b << " = " << result << "\n";
-        record(std::to_string(a) + " / " + std::to_string(b) + " = " + std::to_string(result));
+        std::cout << formatNumber(a) << " / " << formatNumber(b) << " = " << formatNumber(result) << "\n";
+        record(formatNumber(a) + " / " + formatNumber(b) + " = " + formatNumber(result));
     }
 
     void performPower() {
         double base = getNumber("Enter base: ");
         double exp = getNumber("Enter exponent: ");
         double result = std::pow(base, exp);
-        std::cout << base << " ^ " << exp << " = " << result << "\n";
-        record(std::to_string(base) + " ^ " + std::to_string(exp) + " = " + std::to_string(result));
+        std::cout << formatNumber(base) << " ^ " << formatNumber(exp) << " = " << formatNumber(result) << "\n";
+        record(formatNumber(base) + " ^ " + formatNumber(exp) + " = " + formatNumber(result));
     }
 
     void performSquareRoot() {
@@ -129,8 +171,8 @@ private:
             return;
         }
         double result = std::sqrt(a);
-        std::cout << "sqrt(" << a << ") = " << result << "\n";
-        record("sqrt(" + std::to_string(a) + ") = " + std::to_string(result));
+        std::cout << "sqrt(" << formatNumber(a) << ") = " << formatNumber(result) << "\n";
+        record("sqrt(" + formatNumber(a) + ") = " + formatNumber(result));
     }
 
     void performModulo() {
@@ -145,6 +187,33 @@ private:
         record(std::to_string(a) + " % " + std::to_string(b) + " = " + std::to_string(result));
     }
 
+    void performFactorial() {
+        double input = getNumber("Enter non-negative integer: ");
+        if (input < 0 || input != std::floor(input)) {
+            std::cout << "Error: Factorial requires a non-negative integer.\n";
+            return;
+        }
+        if (input > 20) {
+            std::cout << "Error: Input too large (max 20).\n";
+            return;
+        }
+        long n = static_cast<long>(input);
+        unsigned long long result = 1;
+        for (long i = 2; i <= n; ++i) {
+            result *= static_cast<unsigned long long>(i);
+        }
+        std::cout << n << "! = " << result << "\n";
+        record(std::to_string(n) + "! = " + std::to_string(result));
+    }
+
+    void performPercentage() {
+        double value = getNumber("Enter value: ");
+        double percent = getNumber("Enter percentage: ");
+        double result = value * (percent / 100.0);
+        std::cout << formatNumber(percent) << "% of " << formatNumber(value) << " = " << formatNumber(result) << "\n";
+        record(formatNumber(percent) + "% of " + formatNumber(value) + " = " + formatNumber(result));
+    }
+
     void showHistory() const {
         if (history.empty()) {
             std::cout << "No history yet.\n";
@@ -155,6 +224,54 @@ private:
             std::cout << i + 1 << ". " << history[i] << "\n";
         }
         std::cout << "---------------------------\n";
+    }
+
+    void clearHistory() {
+        history.clear();
+        std::cout << "History cleared.\n";
+    }
+
+    void memoryMenu() {
+        int choice = 0;
+        while (choice != 5) {
+            std::cout << "\n--- Memory Functions ---\n";
+            std::cout << "1. M+ (Add to memory)\n";
+            std::cout << "2. M- (Subtract from memory)\n";
+            std::cout << "3. MR (Recall memory)\n";
+            std::cout << "4. MC (Clear memory)\n";
+            std::cout << "5. Back\n";
+            std::cout << "Enter choice: ";
+            if (!(std::cin >> choice)) {
+                std::cin.clear();
+                std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+                continue;
+            }
+            switch (choice) {
+                case 1: {
+                    double val = getNumber("Enter value to add: ");
+                    memory += val;
+                    record("M+ " + formatNumber(val) + " -> Memory: " + formatNumber(memory));
+                    break;
+                }
+                case 2: {
+                    double val = getNumber("Enter value to subtract: ");
+                    memory -= val;
+                    record("M- " + formatNumber(val) + " -> Memory: " + formatNumber(memory));
+                    break;
+                }
+                case 3:
+                    std::cout << "Memory: " << formatNumber(memory) << "\n";
+                    break;
+                case 4:
+                    memory = 0.0;
+                    std::cout << "Memory cleared.\n";
+                    break;
+                case 5:
+                    break;
+                default:
+                    std::cout << "Invalid choice.\n";
+            }
+        }
     }
 };
 
