@@ -9,22 +9,46 @@ import queue
 
 class CalculatorBuilderGUI:
     """Simple Tkinter GUI to build the C++ calculator into a Windows .exe
-    and view the build logs in real time."""
+    and view the build logs in real time. Auto-detects Visual Studio so
+    you do not have to run the Developer Command Prompt manually."""
 
     def __init__(self, root: tk.Tk):
         self.root = root
-        self.root.title("C++ Calculator -> EXE Builder")
-        self.root.geometry("850x650")
-        self.root.minsize(700, 500)
+        self.root.title("C++ Calculator -> EXE Builder (Auto VS Detect)")
+        self.root.geometry("900x700")
+        self.root.minsize(700, 550)
 
         self.log_queue: queue.Queue = queue.Queue()
         self.building = False
+        self.detected_cl: str | None = None
+        self.detected_vcvars: str | None = None
 
         self.create_widgets()
         self.poll_queue()
+        self.auto_detect_vs()
 
     # ------------------------------------------------------------------ UI
     def create_widgets(self):
+        # ---- Visual Studio detection bar
+        info_frame = ttk.LabelFrame(self.root, text="Visual Studio Detection", padding="10")
+        info_frame.pack(fill=tk.X, padx=10, pady=5)
+
+        self.vs_status_var = tk.StringVar(value="Scanning for Visual Studio...")
+        ttk.Label(info_frame, textvariable=self.vs_status_var, foreground="blue").grid(
+            row=0, column=0, sticky=tk.W
+        )
+        ttk.Button(info_frame, text="Re-detect", command=self.auto_detect_vs).grid(
+            row=0, column=1, padx=10
+        )
+        ttk.Button(info_frame, text="Open Dev CMD", command=self.open_dev_cmd).grid(
+            row=0, column=2, padx=5
+        )
+
+        self.cl_path_var = tk.StringVar(value="cl.exe: not found")
+        ttk.Label(info_frame, textvariable=self.cl_path_var).grid(
+            row=1, column=0, sticky=tk.W, columnspan=3
+        )
+
         # ---- Input row: source file
         input_frame = ttk.Frame(self.root, padding="10")
         input_frame.pack(fill=tk.X)
@@ -101,6 +125,96 @@ class CalculatorBuilderGUI:
         if os.path.isdir(folder):
             os.startfile(folder)
 
+    def open_dev_cmd(self):
+        """Hint for the user if auto-detect fails."""
+        messagebox.showinfo(
+            "Developer Command Prompt",
+            "Open the Start menu and run:\n"
+            "Developer Command Prompt for VS 2022\n\n"
+            "Then run this GUI from that prompt, or let the auto-detect "
+            "find Visual Studio for you.",
+        )
+
+    # ------------------------------------------------------------------ VS auto-detect
+    def auto_detect_vs(self):
+        """Kick off Visual Studio / cl.exe detection in a background thread."""
+        self.vs_status_var.set("Detecting Visual Studio...")
+        self.cl_path_var.set("cl.exe: searching...")
+        self.build_btn.config(state=tk.DISABLED)
+        thread = threading.Thread(target=self._detect_vs_thread, daemon=True)
+        thread.start()
+
+    def _detect_vs_thread(self):
+        # 1. Check PATH first (covers Developer Command Prompt users)
+        cl_path = shutil.which("cl")
+        if cl_path:
+            self.log_queue.put(f"[DETECT] Found cl.exe on PATH: {cl_path}")
+            self.detected_cl = cl_path
+            self.detected_vcvars = None  # assume environment is already set
+            self.root.after(0, self._detection_ui_found, "Found on PATH", cl_path)
+            return
+
+        # 2. Search common Visual Studio 2022 installation folders
+        vs_roots = [
+            r"C:\Program Files\Microsoft Visual Studio\2022",
+            r"C:\Program Files (x86)\Microsoft Visual Studio\2022",
+        ]
+        editions = ["Community", "Professional", "Enterprise", "BuildTools"]
+
+        found = []
+        for root in vs_roots:
+            if not os.path.isdir(root):
+                continue
+            for edition in editions:
+                vc_dir = os.path.join(root, edition, "VC", "Tools", "MSVC")
+                if not os.path.isdir(vc_dir):
+                    continue
+                versions = [
+                    d for d in os.listdir(vc_dir)
+                    if os.path.isdir(os.path.join(vc_dir, d))
+                ]
+                versions.sort(reverse=True)  # latest first
+                for ver in versions:
+                    host_dir = os.path.join(vc_dir, ver, "bin", "Hostx64", "x64")
+                    cl_exe = os.path.join(host_dir, "cl.exe")
+                    vcvars = os.path.join(
+                        root, edition, "VC", "Auxiliary", "Build", "vcvarsall.bat"
+                    )
+                    if os.path.isfile(cl_exe):
+                        found.append((cl_exe, vcvars, root, edition, ver))
+                        break  # only need latest version per edition
+
+        if found:
+            cl_exe, vcvars, root, edition, ver = found[0]
+            vcvars_ok = vcvars if os.path.isfile(vcvars) else None
+            self.log_queue.put(f"[DETECT] Found cl.exe: {cl_exe}")
+            self.log_queue.put(f"[DETECT] Visual Studio {edition} {ver}")
+            self.log_queue.put(
+                f"[DETECT] vcvarsall.bat: {vcvars_ok if vcvars_ok else 'NOT FOUND'}"
+            )
+            self.detected_cl = cl_exe
+            self.detected_vcvars = vcvars_ok
+            self.root.after(0, self._detection_ui_found, f"{edition} {ver}", cl_exe)
+        else:
+            self.log_queue.put("[DETECT] cl.exe not found on PATH or in common VS folders.")
+            self.log_queue.put(
+                "[DETECT] Install Visual Studio 2022 with C++ build tools, "
+                "or run this app from the Developer Command Prompt for VS 2022."
+            )
+            self.root.after(0, self._detection_ui_not_found)
+
+    def _detection_ui_found(self, status: str, cl_path: str):
+        self.vs_status_var.set(f"VS: {status}")
+        self.cl_path_var.set(f"cl.exe: {cl_path}")
+        self.build_btn.config(state=tk.NORMAL)
+        self.status_var.set("Ready - cl.exe detected")
+
+    def _detection_ui_not_found(self):
+        self.vs_status_var.set("VS: not found")
+        self.cl_path_var.set("cl.exe: not found")
+        self.build_btn.config(state=tk.NORMAL)
+        self.status_var.set("Ready - cl.exe NOT detected")
+
     # ------------------------------------------------------------------ build flow
     def poll_queue(self):
         """Pump log messages from the worker thread into the Tkinter text widget."""
@@ -128,6 +242,13 @@ class CalculatorBuilderGUI:
         if not output:
             messagebox.showerror("Error", "Please specify an output EXE name.")
             return
+        if not self.detected_cl:
+            messagebox.showerror(
+                "Error",
+                "cl.exe was not detected.\n"
+                "Click 'Re-detect' or run this app from the Developer Command Prompt for VS 2022.",
+            )
+            return
 
         self.building = True
         self.build_btn.config(state=tk.DISABLED)
@@ -138,31 +259,33 @@ class CalculatorBuilderGUI:
         thread = threading.Thread(target=self.run_build, args=(source, output), daemon=True)
         thread.start()
 
-    def find_cl(self) -> str | None:
-        """Return 'cl' if it's on PATH, otherwise None."""
-        return "cl" if shutil.which("cl") else None
-
     def run_build(self, source: str, output: str):
-        cl = self.find_cl()
+        cl = self.detected_cl
+        vcvars = self.detected_vcvars
+
         if not cl:
-            self.log_queue.put("ERROR: cl.exe not found on PATH.")
-            self.log_queue.put("Run this from the Developer Command Prompt for VS 2022.")
+            self.log_queue.put("ERROR: cl.exe not found.")
+            self.log_queue.put("Run Auto-Detect or open Developer Command Prompt for VS 2022.")
             self.log_queue.put("__BUILD_DONE__")
             return
 
-        cmd = [
-            cl,
-            "/EHsc",
-            "/O2",
-            "/std:c++17",
-            f"/Fe{output}",
-            source,
-        ]
-
-        self.log_queue.put(f">>> {' '.join(cmd)}")
-        self.log_queue.put("")
-
         cwd = os.path.dirname(os.path.abspath(source))
+
+        # Build the command. If we found vcvarsall.bat, call it first so cl.exe
+        # has the right INCLUDE / LIB / PATH environment variables.
+        if vcvars and os.path.isfile(vcvars):
+            cmd_str = (
+                f'call "{vcvars}" x64 && '
+                f'cl /EHsc /O2 /std:c++17 /Fe"{output}" "{source}"'
+            )
+            cmd = ["cmd", "/c", cmd_str]
+            self.log_queue.put(f">>> Using vcvarsall.bat: {vcvars}")
+        else:
+            cmd = [cl, "/EHsc", "/O2", "/std:c++17", f'/Fe"{output}"', f'"{source}"']
+            self.log_queue.put(f">>> Using cl.exe directly: {cl}")
+
+        self.log_queue.put(f">>> Working directory: {cwd}")
+        self.log_queue.put("")
 
         try:
             creationflags = (
@@ -195,7 +318,7 @@ class CalculatorBuilderGUI:
 
         except FileNotFoundError:
             self.log_queue.put("ERROR: cl.exe not found.")
-            self.log_queue.put("Make sure you are inside the Developer Command Prompt for VS 2022.")
+            self.log_queue.put("Make sure Visual Studio 2022 C++ tools are installed.")
         except Exception as exc:  # noqa: BLE001
             self.log_queue.put(f"ERROR: {exc}")
 
