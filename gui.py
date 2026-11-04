@@ -296,9 +296,9 @@ class CalculatorBuilderGUI:
         try:
             mode = self.mode_var.get()
             if mode == "Debug":
-                opt_flags = ["/EHsc", "/Od", "/Zi", "/std:c++17"]
+                opt_flags = ["/EHsc", "/Od", "/Zi", "/std:c++17", "/SUBSYSTEM:WINDOWS"]
             else:
-                opt_flags = ["/EHsc", "/O2", "/std:c++17"]
+                opt_flags = ["/EHsc", "/O2", "/std:c++17", "/SUBSYSTEM:WINDOWS"]
 
             if vcvars and os.path.isfile(vcvars):
                 with tempfile.NamedTemporaryFile(
@@ -314,6 +314,7 @@ class CalculatorBuilderGUI:
                 cmd = [cl, *opt_flags, f'/Fe"{output}"', f'"{source}"']
                 self.log_queue.put(f">>> Using cl.exe directly: {cl}")
             self.log_queue.put(f">>> Build mode: {mode}")
+            self.log_queue.put(">>> Subsystem: WINDOWS (GUI app, no console)")
 
             self.log_queue.put(f">>> Working directory: {cwd}")
             self.log_queue.put("")
