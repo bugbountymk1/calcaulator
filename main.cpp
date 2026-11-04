@@ -50,19 +50,19 @@ private:
     int themeIndex;
 
     void applyTheme() const {
-        const char* colors[] = {"0F", "F0", "1F", "2F", "4F", "0A", "5F", "3F"};
+        const char* colors[] = {"0F", "F0", "1F", "2F", "4F", "0A", "5F", "3F", "F1", "F2", "F3", "F5", "F4", "F6"};
         std::string cmd = "color ";
         cmd += colors[themeIndex];
         system(cmd.c_str());
     }
 
     const char* themeName() const {
-        const char* names[] = {"Dark", "White", "Blue", "Green", "Red", "Matrix", "Purple", "Cyan"};
+        const char* names[] = {"Dark", "White", "Blue", "Green", "Red", "Matrix", "Purple", "Cyan", "Glass Blue", "Glass Green", "Glass Cyan", "Glass Purple", "Glass Red", "Glass Gold"};
         return names[themeIndex];
     }
 
     void toggleTheme() {
-        themeIndex = (themeIndex + 1) % 8;
+        themeIndex = (themeIndex + 1) % 14;
         applyTheme();
         std::cout << "Switched to " << themeName() << " theme.\n";
     }
