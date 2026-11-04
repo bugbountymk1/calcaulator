@@ -6,6 +6,8 @@
 #include <sstream>
 #include <limits>
 #include <windows.h>
+#undef max
+#undef min
 
 class Calculator {
 public:
