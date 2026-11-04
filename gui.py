@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, scrolledtext, messagebox
 import subprocess
+import tempfile
 import threading
 import os
 import shutil
@@ -273,21 +274,25 @@ class CalculatorBuilderGUI:
 
         # Build the command. If we found vcvarsall.bat, call it first so cl.exe
         # has the right INCLUDE / LIB / PATH environment variables.
-        if vcvars and os.path.isfile(vcvars):
-            cmd_str = (
-                f'call "{vcvars}" x64 && '
-                f'cl /EHsc /O2 /std:c++17 /Fe"{output}" "{source}"'
-            )
-            cmd = ["cmd", "/c", cmd_str]
-            self.log_queue.put(f">>> Using vcvarsall.bat: {vcvars}")
-        else:
-            cmd = [cl, "/EHsc", "/O2", "/std:c++17", f'/Fe"{output}"', f'"{source}"']
-            self.log_queue.put(f">>> Using cl.exe directly: {cl}")
-
-        self.log_queue.put(f">>> Working directory: {cwd}")
-        self.log_queue.put("")
-
+        batch_path = None
         try:
+            if vcvars and os.path.isfile(vcvars):
+                with tempfile.NamedTemporaryFile(
+                    mode="w", suffix=".bat", prefix="calc_build_", delete=False
+                ) as bat_file:
+                    bat_file.write("@echo off\n")
+                    bat_file.write(f'call "{vcvars}" x64\n')
+                    bat_file.write(f'cl /EHsc /O2 /std:c++17 /Fe"{output}" "{source}"\n')
+                    batch_path = bat_file.name
+                cmd = ["cmd.exe", "/c", batch_path]
+                self.log_queue.put(f">>> Using vcvarsall.bat: {vcvars}")
+            else:
+                cmd = [cl, "/EHsc", "/O2", "/std:c++17", f'/Fe"{output}"', f'"{source}"']
+                self.log_queue.put(f">>> Using cl.exe directly: {cl}")
+
+            self.log_queue.put(f">>> Working directory: {cwd}")
+            self.log_queue.put("")
+
             creationflags = (
                 subprocess.CREATE_NO_WINDOW
                 if hasattr(subprocess, "CREATE_NO_WINDOW")
@@ -321,6 +326,12 @@ class CalculatorBuilderGUI:
             self.log_queue.put("Make sure Visual Studio 2022 C++ tools are installed.")
         except Exception as exc:  # noqa: BLE001
             self.log_queue.put(f"ERROR: {exc}")
+        finally:
+            if batch_path and os.path.exists(batch_path):
+                try:
+                    os.remove(batch_path)
+                except OSError:
+                    pass
 
         self.log_queue.put("__BUILD_DONE__")
 
