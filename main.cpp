@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <commctrl.h>
 #include <sstream>
 #include <iomanip>
 #include <algorithm>
@@ -303,10 +304,10 @@ static void showHistory() {
     calc.hHistoryWnd = CreateWindowA("STATIC", "Calculation History", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
         CW_USEDEFAULT, CW_USEDEFAULT, 420, 380, calc.hWnd, nullptr, GetModuleHandle(nullptr), nullptr);
     HWND hList = CreateWindowA("LISTBOX", "", WS_CHILD | WS_VISIBLE | WS_BORDER | WS_VSCROLL | LBS_NOTIFY,
-        10, 10, 380, 270, calc.hHistoryWnd, (HMENU)IDC_HIST_LIST, GetModuleHandle(nullptr), nullptr);
+        10, 10, 380, 270, calc.hHistoryWnd, (HMENU)(INT_PTR)IDC_HIST_LIST, GetModuleHandle(nullptr), nullptr);
     for (auto& e : calc.history) SendMessageA(hList, LB_ADDSTRING, 0, (LPARAM)e.c_str());
     HWND hClose = CreateWindowA("BUTTON", "Close", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
-        160, 290, 100, 32, calc.hHistoryWnd, (HMENU)IDC_HIST_CLOSE, GetModuleHandle(nullptr), nullptr);
+        160, 290, 100, 32, calc.hHistoryWnd, (HMENU)(INT_PTR)IDC_HIST_CLOSE, GetModuleHandle(nullptr), nullptr);
 }
 
 static void showAbout() {
@@ -318,7 +319,7 @@ static void showAbout() {
 // ---------------------------------------------------------------------------
 static HWND createButton(HWND hParent, int id, const char* text, int x, int y, int w, int h) {
     return CreateWindowA("BUTTON", text, WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | WS_TABSTOP,
-        x, y, w, h, hParent, (HMENU)id, GetModuleHandle(nullptr), nullptr);
+        x, y, w, h, hParent, (HMENU)(INT_PTR)id, GetModuleHandle(nullptr), nullptr);
 }
 
 static void createControls(HWND hWnd) {
@@ -329,7 +330,7 @@ static void createControls(HWND hWnd) {
 
     // Display
     calc.hDisplay = CreateWindowA("EDIT", "0", WS_CHILD | WS_VISIBLE | WS_BORDER | ES_RIGHT | ES_READONLY | ES_AUTOHSCROLL,
-        10, 10, 560, 48, hWnd, (HMENU)IDC_DISPLAY, GetModuleHandle(nullptr), nullptr);
+        10, 10, 560, 48, hWnd, (HMENU)(INT_PTR)IDC_DISPLAY, GetModuleHandle(nullptr), nullptr);
     SendMessageA(calc.hDisplay, WM_SETFONT, (WPARAM)calc.hBigFont, TRUE);
 
     int bw = 72, bh = 48, gap = 8, x0 = 10, y0 = 70;
