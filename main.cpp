@@ -9,7 +9,7 @@
 
 class Calculator {
 public:
-    Calculator() : memory(0.0), darkTheme(true) {}
+    Calculator() : memory(0.0), themeIndex(0) {}
 
     void run() {
         applyTheme();
@@ -47,20 +47,24 @@ public:
 private:
     double memory;
     std::vector<std::string> history;
-    bool darkTheme;
+    int themeIndex;
 
     void applyTheme() const {
-        if (darkTheme) {
-            system("color 0F"); // black background, bright white text
-        } else {
-            system("color F0"); // white background, black text
-        }
+        const char* colors[] = {"0F", "F0", "1F", "2F", "4F", "0A", "5F", "3F"};
+        std::string cmd = "color ";
+        cmd += colors[themeIndex];
+        system(cmd.c_str());
+    }
+
+    const char* themeName() const {
+        const char* names[] = {"Dark", "White", "Blue", "Green", "Red", "Matrix", "Purple", "Cyan"};
+        return names[themeIndex];
     }
 
     void toggleTheme() {
-        darkTheme = !darkTheme;
+        themeIndex = (themeIndex + 1) % 8;
         applyTheme();
-        std::cout << "Switched to " << (darkTheme ? "Dark" : "White") << " theme.\n";
+        std::cout << "Switched to " << themeName() << " theme.\n";
     }
 
     void displayMenu() const {
@@ -78,11 +82,11 @@ private:
         std::cout << "9. Percentage\n";
         std::cout << "10. Show History\n";
         std::cout << "11. Clear History\n";
-        std::cout << "12. Theme (Dark/White)\n";
+        std::cout << "12. Change Theme\n";
         std::cout << "13. Memory Functions\n";
         std::cout << "14. Exit\n";
         std::cout << "------------------------------\n";
-        std::cout << "Theme: " << (darkTheme ? "Dark" : "White") << "\n";
+        std::cout << "Theme: " << themeName() << "\n";
         std::cout << "Memory: " << formatNumber(memory) << "\n";
     }
 
