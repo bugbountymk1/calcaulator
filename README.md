@@ -6,9 +6,13 @@ A full-featured console calculator written in C++ with dark/white themes, calcul
 
 - **Basic arithmetic:** Addition, subtraction, multiplication, division
 - **Advanced math:** Power (`x^y`), square root, modulo, factorial (`n!`), percentage
+- **Trigonometry:** Sine, cosine, tangent (degrees)
+- **Logarithms:** Log10 and natural log (ln)
+- **Last result (Ans):** Each calculation updates `Ans`, shown on the menu
 - **Memory functions:** M+ (add), M- (subtract), MR (recall), MC (clear)
 - **History:** Last 100 calculations, with option to clear history
-- **Themes:** Switch between Dark and White console themes
+- **Themes:** 14 console color themes (Dark, White, Blue, Green, Red, Matrix, Purple, Cyan, and Glass variants)
+- **Clear screen:** Clear the console at any time
 - **Input validation:** Rejects invalid numbers, division/modulo by zero, negative square roots, invalid factorials, etc.
 
 ## Requirements
@@ -61,14 +65,21 @@ When you start the calculator, you will see a menu:
 7. Modulo
 8. Factorial (n!)
 9. Percentage
-10. Show History
-11. Clear History
-12. Theme (Dark/White)
-13. Memory Functions
-14. Exit
+10. Sine (sin)
+11. Cosine (cos)
+12. Tangent (tan)
+13. Log10 (log)
+14. Natural Log (ln)
+15. Show History
+16. Clear History
+17. Change Theme
+18. Memory Functions
+19. Clear Screen
+20. Exit
 ------------------------------
 Theme: Dark
 Memory: 0
+Ans: --
 ```
 
 ### Menu Options
@@ -84,11 +95,17 @@ Memory: 0
 | 7 | Modulo — enter two integers, get the remainder |
 | 8 | Factorial — enter a non-negative integer (max 20) |
 | 9 | Percentage — enter a value and a percentage, compute `value × percent%` |
-| 10 | Show History — view the last 100 calculations |
-| 11 | Clear History — erase all stored calculations |
-| 12 | Theme — toggle between Dark and White console themes |
-| 13 | Memory Functions — submenu for M+, M-, MR, MC |
-| 14 | Exit — close the calculator |
+| 10 | Sine — enter angle in degrees, compute sine |
+| 11 | Cosine — enter angle in degrees, compute cosine |
+| 12 | Tangent — enter angle in degrees, compute tangent |
+| 13 | Log10 — compute base-10 logarithm (positive value required) |
+| 14 | Natural Log — compute natural logarithm (positive value required) |
+| 15 | Show History — view the last 100 calculations |
+| 16 | Clear History — erase all stored calculations |
+| 17 | Theme — cycle through 14 console color themes |
+| 18 | Memory Functions — submenu for M+, M-, MR, MC |
+| 19 | Clear Screen — clear the console |
+| 20 | Exit — close the calculator |
 
 ### Memory Submenu (Option 13)
 
@@ -118,4 +135,6 @@ Memory: 0
 ## Notes
 
 - The app uses Windows console colors (`system("color ...")`) for theme switching, so it is designed for Windows CMD/PowerShell.
+- Trigonometric functions accept angles in degrees.
+- `Ans` stores the result of the last successful calculation and is shown on the main menu.
 - History is kept in memory only and is cleared when you exit the program.

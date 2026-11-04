@@ -23,6 +23,7 @@ class CalculatorBuilderGUI:
         self.building = False
         self.detected_cl: str | None = None
         self.detected_vcvars: str | None = None
+        self.last_output: str | None = None
 
         self.create_widgets()
         self.poll_queue()
@@ -66,6 +67,20 @@ class CalculatorBuilderGUI:
         self.output_entry = ttk.Entry(input_frame, textvariable=self.output_var, width=70)
         self.output_entry.grid(row=1, column=1, sticky=tk.EW, padx=5, pady=5)
 
+        # ---- Build mode row
+        ttk.Label(input_frame, text="Build mode:").grid(row=2, column=0, sticky=tk.W, pady=5)
+        self.mode_var = tk.StringVar(value="Release")
+        mode_combo = ttk.Combobox(
+            input_frame, textvariable=self.mode_var, values=["Debug", "Release"],
+            state="readonly", width=12
+        )
+        mode_combo.grid(row=2, column=1, sticky=tk.W, padx=5, pady=5)
+        ttk.Label(
+            input_frame,
+            text="Debug: /Od /Zi   |   Release: /O2 /std:c++17",
+            foreground="gray",
+        ).grid(row=2, column=2, sticky=tk.W, padx=5, pady=5)
+
         input_frame.columnconfigure(1, weight=1)
 
         # ---- Action buttons
@@ -74,6 +89,9 @@ class CalculatorBuilderGUI:
 
         self.build_btn = ttk.Button(btn_frame, text="Build EXE", command=self.start_build)
         self.build_btn.pack(side=tk.LEFT, padx=5)
+
+        self.run_btn = ttk.Button(btn_frame, text="Run EXE", command=self.run_exe, state=tk.DISABLED)
+        self.run_btn.pack(side=tk.LEFT, padx=5)
 
         ttk.Button(btn_frame, text="Clear Logs", command=self.clear_logs).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="Open Folder", command=self.open_folder).pack(side=tk.LEFT, padx=5)
@@ -276,19 +294,26 @@ class CalculatorBuilderGUI:
         # has the right INCLUDE / LIB / PATH environment variables.
         batch_path = None
         try:
+            mode = self.mode_var.get()
+            if mode == "Debug":
+                opt_flags = ["/EHsc", "/Od", "/Zi", "/std:c++17"]
+            else:
+                opt_flags = ["/EHsc", "/O2", "/std:c++17"]
+
             if vcvars and os.path.isfile(vcvars):
                 with tempfile.NamedTemporaryFile(
                     mode="w", suffix=".bat", prefix="calc_build_", delete=False
                 ) as bat_file:
                     bat_file.write("@echo off\n")
                     bat_file.write(f'call "{vcvars}" x64\n')
-                    bat_file.write(f'cl /EHsc /O2 /std:c++17 /Fe"{output}" "{source}"\n')
+                    bat_file.write(f'cl {" ".join(opt_flags)} /Fe"{output}" "{source}"\n')
                     batch_path = bat_file.name
                 cmd = ["cmd.exe", "/c", batch_path]
                 self.log_queue.put(f">>> Using vcvarsall.bat: {vcvars}")
             else:
-                cmd = [cl, "/EHsc", "/O2", "/std:c++17", f'/Fe"{output}"', f'"{source}"']
+                cmd = [cl, *opt_flags, f'/Fe"{output}"', f'"{source}"']
                 self.log_queue.put(f">>> Using cl.exe directly: {cl}")
+            self.log_queue.put(f">>> Build mode: {mode}")
 
             self.log_queue.put(f">>> Working directory: {cwd}")
             self.log_queue.put("")
@@ -317,6 +342,8 @@ class CalculatorBuilderGUI:
                 self.log_queue.put("")
                 self.log_queue.put(f"BUILD SUCCESS: {output}")
                 self.log_queue.put(f"Location: {cwd}")
+                self.last_output = os.path.join(cwd, output)
+                self.root.after(0, self._enable_run_btn)
             else:
                 self.log_queue.put("")
                 self.log_queue.put(f"BUILD FAILED (exit code {proc.returncode})")
@@ -334,6 +361,21 @@ class CalculatorBuilderGUI:
                     pass
 
         self.log_queue.put("__BUILD_DONE__")
+
+    def _enable_run_btn(self):
+        self.run_btn.config(state=tk.NORMAL)
+        self.status_var.set("Ready - EXE built")
+
+    def run_exe(self):
+        """Run the last-built EXE."""
+        if not self.last_output or not os.path.isfile(self.last_output):
+            messagebox.showerror("Error", "No built EXE found. Build the project first.")
+            return
+        try:
+            os.startfile(self.last_output)
+            self.log(f">>> Ran: {self.last_output}")
+        except Exception as exc:
+            messagebox.showerror("Error", f"Failed to run EXE:\n{exc}")
 
     def build_finished(self):
         self.building = False

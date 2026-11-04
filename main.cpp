@@ -9,12 +9,12 @@
 
 class Calculator {
 public:
-    Calculator() : memory(0.0), themeIndex(0) {}
+    Calculator() : memory(0.0), themeIndex(0), ans(0.0) { hasAns = false; }
 
     void run() {
         applyTheme();
         int choice = 0;
-        while (choice != 14) {
+        while (choice != 20) {
             displayMenu();
             std::cout << "\nEnter choice: ";
             if (!(std::cin >> choice)) {
@@ -34,11 +34,17 @@ public:
                 case 7: performModulo(); break;
                 case 8: performFactorial(); break;
                 case 9: performPercentage(); break;
-                case 10: showHistory(); break;
-                case 11: clearHistory(); break;
-                case 12: toggleTheme(); break;
-                case 13: memoryMenu(); break;
-                case 14: std::cout << "Goodbye!\n"; break;
+                case 10: performSine(); break;
+                case 11: performCosine(); break;
+                case 12: performTangent(); break;
+                case 13: performLog10(); break;
+                case 14: performLn(); break;
+                case 15: showHistory(); break;
+                case 16: clearHistory(); break;
+                case 17: toggleTheme(); break;
+                case 18: memoryMenu(); break;
+                case 19: system("cls"); break;
+                case 20: std::cout << "Goodbye!\n"; break;
                 default: std::cout << "Invalid choice. Try again.\n";
             }
         }
@@ -46,6 +52,8 @@ public:
 
 private:
     double memory;
+    double ans;
+    bool hasAns;
     std::vector<std::string> history;
     int themeIndex;
 
@@ -80,14 +88,21 @@ private:
         std::cout << "7. Modulo\n";
         std::cout << "8. Factorial (n!)\n";
         std::cout << "9. Percentage\n";
-        std::cout << "10. Show History\n";
-        std::cout << "11. Clear History\n";
-        std::cout << "12. Change Theme\n";
-        std::cout << "13. Memory Functions\n";
-        std::cout << "14. Exit\n";
+        std::cout << "10. Sine (sin)\n";
+        std::cout << "11. Cosine (cos)\n";
+        std::cout << "12. Tangent (tan)\n";
+        std::cout << "13. Log10 (log)\n";
+        std::cout << "14. Natural Log (ln)\n";
+        std::cout << "15. Show History\n";
+        std::cout << "16. Clear History\n";
+        std::cout << "17. Change Theme\n";
+        std::cout << "18. Memory Functions\n";
+        std::cout << "19. Clear Screen\n";
+        std::cout << "20. Exit\n";
         std::cout << "------------------------------\n";
         std::cout << "Theme: " << themeName() << "\n";
         std::cout << "Memory: " << formatNumber(memory) << "\n";
+        std::cout << "Ans: " << (hasAns ? formatNumber(ans) : "--") << "\n";
     }
 
     std::string formatNumber(double value) const {
@@ -124,11 +139,17 @@ private:
         }
     }
 
+    void setAns(double value) {
+        ans = value;
+        hasAns = true;
+    }
+
     void performAddition() {
         double a = getNumber("Enter first number: ");
         double b = getNumber("Enter second number: ");
         double result = a + b;
         std::cout << formatNumber(a) << " + " << formatNumber(b) << " = " << formatNumber(result) << "\n";
+        setAns(result);
         record(formatNumber(a) + " + " + formatNumber(b) + " = " + formatNumber(result));
     }
 
@@ -137,6 +158,7 @@ private:
         double b = getNumber("Enter second number: ");
         double result = a - b;
         std::cout << formatNumber(a) << " - " << formatNumber(b) << " = " << formatNumber(result) << "\n";
+        setAns(result);
         record(formatNumber(a) + " - " + formatNumber(b) + " = " + formatNumber(result));
     }
 
@@ -145,6 +167,7 @@ private:
         double b = getNumber("Enter second number: ");
         double result = a * b;
         std::cout << formatNumber(a) << " * " << formatNumber(b) << " = " << formatNumber(result) << "\n";
+        setAns(result);
         record(formatNumber(a) + " * " + formatNumber(b) + " = " + formatNumber(result));
     }
 
@@ -157,6 +180,7 @@ private:
         }
         double result = a / b;
         std::cout << formatNumber(a) << " / " << formatNumber(b) << " = " << formatNumber(result) << "\n";
+        setAns(result);
         record(formatNumber(a) + " / " + formatNumber(b) + " = " + formatNumber(result));
     }
 
@@ -165,6 +189,7 @@ private:
         double exp = getNumber("Enter exponent: ");
         double result = std::pow(base, exp);
         std::cout << formatNumber(base) << " ^ " << formatNumber(exp) << " = " << formatNumber(result) << "\n";
+        setAns(result);
         record(formatNumber(base) + " ^ " + formatNumber(exp) + " = " + formatNumber(result));
     }
 
@@ -176,6 +201,7 @@ private:
         }
         double result = std::sqrt(a);
         std::cout << "sqrt(" << formatNumber(a) << ") = " << formatNumber(result) << "\n";
+        setAns(result);
         record("sqrt(" + formatNumber(a) + ") = " + formatNumber(result));
     }
 
@@ -188,6 +214,7 @@ private:
         }
         long result = a % b;
         std::cout << a << " % " << b << " = " << result << "\n";
+        setAns(static_cast<double>(result));
         record(std::to_string(a) + " % " + std::to_string(b) + " = " + std::to_string(result));
     }
 
@@ -207,6 +234,7 @@ private:
             result *= static_cast<unsigned long long>(i);
         }
         std::cout << n << "! = " << result << "\n";
+        setAns(static_cast<double>(result));
         record(std::to_string(n) + "! = " + std::to_string(result));
     }
 
@@ -215,7 +243,56 @@ private:
         double percent = getNumber("Enter percentage: ");
         double result = value * (percent / 100.0);
         std::cout << formatNumber(percent) << "% of " << formatNumber(value) << " = " << formatNumber(result) << "\n";
+        setAns(result);
         record(formatNumber(percent) + "% of " + formatNumber(value) + " = " + formatNumber(result));
+    }
+
+    void performSine() {
+        double a = getNumber("Enter angle in degrees: ");
+        double result = std::sin(a * 3.14159265358979323846 / 180.0);
+        std::cout << "sin(" << formatNumber(a) << "°) = " << formatNumber(result) << "\n";
+        setAns(result);
+        record("sin(" + formatNumber(a) + "°) = " + formatNumber(result));
+    }
+
+    void performCosine() {
+        double a = getNumber("Enter angle in degrees: ");
+        double result = std::cos(a * 3.14159265358979323846 / 180.0);
+        std::cout << "cos(" << formatNumber(a) << "°) = " << formatNumber(result) << "\n";
+        setAns(result);
+        record("cos(" + formatNumber(a) + "°) = " + formatNumber(result));
+    }
+
+    void performTangent() {
+        double a = getNumber("Enter angle in degrees: ");
+        double result = std::tan(a * 3.14159265358979323846 / 180.0);
+        std::cout << "tan(" << formatNumber(a) << "°) = " << formatNumber(result) << "\n";
+        setAns(result);
+        record("tan(" + formatNumber(a) + "°) = " + formatNumber(result));
+    }
+
+    void performLog10() {
+        double a = getNumber("Enter value: ");
+        if (a <= 0) {
+            std::cout << "Error: Log10 requires a positive value.\n";
+            return;
+        }
+        double result = std::log10(a);
+        std::cout << "log10(" << formatNumber(a) << ") = " << formatNumber(result) << "\n";
+        setAns(result);
+        record("log10(" + formatNumber(a) + ") = " + formatNumber(result));
+    }
+
+    void performLn() {
+        double a = getNumber("Enter value: ");
+        if (a <= 0) {
+            std::cout << "Error: Natural log requires a positive value.\n";
+            return;
+        }
+        double result = std::log(a);
+        std::cout << "ln(" << formatNumber(a) << ") = " << formatNumber(result) << "\n";
+        setAns(result);
+        record("ln(" + formatNumber(a) + ") = " + formatNumber(result));
     }
 
     void showHistory() const {
